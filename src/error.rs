@@ -19,6 +19,9 @@ pub enum Error {
 
     #[error(transparent)]
     IntError(#[from] std::num::ParseIntError),
+
+    #[error(transparent)]
+    SerdeError(#[from] serde_json::Error),
 }
 
 pub use Error::WebScraperError;
