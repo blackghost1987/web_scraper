@@ -5,10 +5,10 @@ use std::fmt::Debug;
 use std::{fs, thread, time};
 
 mod html_scraper;
-pub use html_scraper::HtmlScraper;
+pub use html_scraper::*;
 
 mod json_scraper;
-pub use json_scraper::JsonScraper;
+pub use json_scraper::*;
 
 type Converter<Data> = fn(&str) -> Result<Data>;
 type BaseParser<Data, ItemBase> = fn(&Url, Data) -> Result<Vec<ItemBase>>;
@@ -120,4 +120,10 @@ impl<Data, ItemBase: Debug + Clone, ItemDetails: Debug + Clone> WebScraper<Data,
 
         Ok(ItemWithDetails { base: base.clone(), details })
     }
+}
+
+pub trait TextParser {
+    fn parse(text: &str) -> Result<Self>
+    where
+        Self: Sized;
 }

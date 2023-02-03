@@ -16,3 +16,9 @@ impl<ItemBase: Debug + Clone, ItemDetails: Debug + Clone> JsonScraper<ItemBase, 
         JsonScraper { inner }
     }
 }
+
+pub trait JsonParser {
+    fn parse(value: &Data) -> Result<Self>
+    where
+        Self: Sized;
+}
