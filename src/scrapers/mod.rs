@@ -77,7 +77,7 @@ impl<Data, ItemBase: Debug + Clone, ItemDetails: Debug + Clone> WebScraper<Data,
         if item_count == 70 {
             panic!("Exactly 70 items in list! Check if your search query is refined enough!");
         } else {
-            println!("Found {} devices", item_count)
+            println!("Found {} items", item_count)
         }
 
         Ok(base_data)
