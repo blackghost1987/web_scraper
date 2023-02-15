@@ -11,8 +11,15 @@ pub struct JsonScraper<ItemBase, ItemDetails> {
 }
 
 impl<ItemBase: Debug + Clone, ItemDetails: Debug + Clone> JsonScraper<ItemBase, ItemDetails> {
-    pub fn new(base_url: &Url, list_path: &str, mock: bool, base_parser: BaseParser<Data, ItemBase>, details_parser: DetailsParser<Data, ItemDetails>) -> Self {
-        let inner = WebScraper::new(base_url, list_path, mock, converter, base_parser, details_parser);
+    pub fn new(
+        base_url: &Url,
+        list_path: &str,
+        mock: bool,
+        base_parser: ListParser<Data, ItemBase>,
+        details_parser: DetailsParser<Data, ItemDetails>,
+        delay: Option<time::Duration>,
+    ) -> Self {
+        let inner = WebScraper::new(base_url, list_path, mock, converter, base_parser, details_parser, delay);
         JsonScraper { inner }
     }
 }

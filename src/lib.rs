@@ -1,11 +1,12 @@
 use crate::error::*;
+use std::collections::HashMap;
 
 pub mod error;
 pub mod scrapers;
 
-pub type QueryParam = (&'static str, &'static str);
-pub type QuerySplitter<'a> = (&'static str, &'a [&'static str]);
-pub type QueryParams<'a> = &'a [QueryParam];
+pub type QueryParam = (String, String);
+pub type QuerySplitter<'a> = (String, &'a [String]);
+pub type QueryParams = HashMap<String, String>;
 
 #[derive(Debug, Clone)]
 pub struct ItemWithDetails<ItemBase, ItemDetails> {
