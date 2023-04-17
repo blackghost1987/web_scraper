@@ -1,7 +1,7 @@
 use super::*;
 
 use reqwest::{StatusCode, Url};
-use std::fmt::Debug;
+use std::fmt::{Display, Debug};
 use std::{fs, thread, time};
 
 mod html_scraper;
@@ -31,7 +31,7 @@ pub struct WebScraper<Data, ItemBase, ItemDetails> {
     delay: Option<time::Duration>,
 }
 
-impl<Data, ItemBase: Debug + Clone, ItemDetails: Debug + Clone> WebScraper<Data, ItemBase, ItemDetails> {
+impl<Data, ItemBase: Display + Clone, ItemDetails: Debug + Clone> WebScraper<Data, ItemBase, ItemDetails> {
     pub fn new(
         base_url: &Url,
         list_path: &str,
@@ -80,7 +80,7 @@ impl<Data, ItemBase: Debug + Clone, ItemDetails: Debug + Clone> WebScraper<Data,
         (self.converter)(&list_raw)
     }
 
-    pub fn get_items_list(&self, query: &QueryParams) -> Result<Vec<ItemBase>> {
+    pub fn get_items_list(&self, query: &QueryParams, page_limit: Option<u16>) -> Result<Vec<ItemBase>> {
         let mut items: Vec<ItemBase> = vec![];
         let mut finished = false;
         let mut page_query = query.clone();
@@ -127,6 +127,12 @@ impl<Data, ItemBase: Debug + Clone, ItemDetails: Debug + Clone> WebScraper<Data,
                     true
                 },
             };
+
+            if let Some(limit) = page_limit {
+                if page_counter == limit {
+                    break;
+                }
+            }
         }
 
         let total_count = items.len();
@@ -141,7 +147,7 @@ impl<Data, ItemBase: Debug + Clone, ItemDetails: Debug + Clone> WebScraper<Data,
         Ok(items)
     }
 
-    pub fn get_items_split_by(&self, query: QueryParams, splitting: QuerySplitter) -> Result<Vec<ItemBase>> {
+    pub fn get_items_split_by(&self, query: QueryParams, splitting: QuerySplitter, page_limit: Option<u16>) -> Result<Vec<ItemBase>> {
         let mut items: Vec<ItemBase> = vec![];
 
         let (split_by, values) = splitting;
@@ -150,7 +156,7 @@ impl<Data, ItemBase: Debug + Clone, ItemDetails: Debug + Clone> WebScraper<Data,
             let mut query_local = query.clone();
             query_local.insert(split_by.clone(), v.to_owned());
             println!("Query page: {:?}", query_local);
-            let mut items_list = self.get_items_list(&query_local)?;
+            let mut items_list = self.get_items_list(&query_local, page_limit)?;
             items.append(&mut items_list);
         }
 
@@ -171,7 +177,7 @@ impl<Data, ItemBase: Debug + Clone, ItemDetails: Debug + Clone> WebScraper<Data,
     }
 
     pub fn get_and_parse_item_details(&self, url: &Url, base: &ItemBase) -> Result<ItemWithDetails<ItemBase, ItemDetails>> {
-        println!("Downloading and parsing item details: {} - {:?}", url, base);
+        println!("Downloading and parsing item details: {} - {}", url, base);
         let doc = self.get_item_details(url)?;
 
         let details = (self.details_parser)(doc)?;

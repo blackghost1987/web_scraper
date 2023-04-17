@@ -13,7 +13,7 @@ pub struct HtmlScraper<ItemBase, ItemDetails> {
     pub inner: WebScraper<Data, ItemBase, ItemDetails>,
 }
 
-impl<ItemBase: Debug + Clone, ItemDetails: Debug + Clone> HtmlScraper<ItemBase, ItemDetails> {
+impl<ItemBase: Display + Clone, ItemDetails: Debug + Clone> HtmlScraper<ItemBase, ItemDetails> {
     pub fn new(
         base_url: &Url,
         list_path: &str,
