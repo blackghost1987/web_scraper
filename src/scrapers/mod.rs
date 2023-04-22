@@ -163,7 +163,7 @@ impl<Data, ItemBase: Display + Clone, ItemDetails: Debug + Clone> WebScraper<Dat
         Ok(items)
     }
 
-    fn get_item_details(&self, url: &Url) -> Result<Data> {
+    pub fn get_item_details(&self, url: &Url) -> Result<Data> {
         let details_raw = if self.mock {
             let contents = fs::read_to_string("example/device_details.html").expect("mock details file reading failed");
             contents
