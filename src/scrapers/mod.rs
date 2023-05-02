@@ -1,7 +1,8 @@
 use super::*;
 
+use reqwest::blocking::Request;
 use reqwest::{StatusCode, Url};
-use std::fmt::{Display, Debug};
+use std::fmt::{Debug, Display};
 use std::{fs, thread, time};
 
 mod html_scraper;
@@ -41,7 +42,12 @@ impl<Data, ItemBase: Display + Clone, ItemDetails: Debug + Clone> WebScraper<Dat
         details_parser: DetailsParser<Data, ItemDetails>,
         delay: Option<time::Duration>,
     ) -> Self {
-        let client = reqwest::blocking::Client::builder().build().expect("client should be created");
+        static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
+
+        let client = reqwest::blocking::Client::builder()
+            .user_agent(APP_USER_AGENT)
+            .build()
+            .expect("client should be created");
         WebScraper {
             client,
             base_url: base_url.to_owned(),
@@ -55,11 +61,16 @@ impl<Data, ItemBase: Display + Clone, ItemDetails: Debug + Clone> WebScraper<Dat
     }
 
     fn get_data(&self, url: &Url, query_opt: Option<&QueryParams>) -> Result<String> {
-        let mut request = self.client.get(url.to_owned());
+        let mut req_builder = self.client.get(url.to_owned());
         if let Some(query) = query_opt {
-            request = request.query(query);
+            req_builder = req_builder.query(query);
         }
-        let response = request.send()?;
+
+        let request: Request = req_builder.build()?;
+
+        debug!("Sending query with URL: {}", request.url());
+
+        let response = self.client.execute(request)?;
 
         match response.status() {
             StatusCode::OK => response.text().map_err(From::from),
@@ -74,7 +85,7 @@ impl<Data, ItemBase: Display + Clone, ItemDetails: Debug + Clone> WebScraper<Dat
             contents
         } else {
             let url = self.base_url.join(&self.list_path).expect("URL join should work");
-            println!("Getting items list from {} with params: {:?}...", url, query);
+            //debug!("Getting items list from {} with params: {:?}...", url, query);
             self.get_data(&url, Some(query))?
         };
         (self.converter)(&list_raw)
@@ -95,17 +106,17 @@ impl<Data, ItemBase: Display + Clone, ItemDetails: Debug + Clone> WebScraper<Dat
 
             finished = match pagination_opt {
                 Some(pagination) => {
-                    println!("Got page {} of {:?}, next page query: {:?}", pagination.current_page, pagination.total_pages, pagination.next_page_query);
+                    info!("Got page {} of {:?}, next page query: {:?}", pagination.current_page, pagination.total_pages, pagination.next_page_query);
 
                     match pagination.next_page_query {
                         Some(next_query) => {
                             let mut next_page_query = page_query.clone();
                             next_page_query.insert(next_query.0, next_query.1);
 
-                            //println!("Would ask next_page_query to be: {:?}", next_page_query);
+                            //debug!("Would ask next_page_query to be: {:?}", next_page_query);
 
                             if next_page_query == page_query {
-                                println!("Query is the same as the last one, stopping to prevent infinite loop");
+                                warn!("Query is the same as the last one, stopping to prevent infinite loop");
                                 true
                             } else {
                                 // let's get the next page
@@ -117,13 +128,13 @@ impl<Data, ItemBase: Display + Clone, ItemDetails: Debug + Clone> WebScraper<Dat
                             }
                         },
                         None => {
-                            println!("Pagination finished, got {} pages", page_counter);
+                            info!("Pagination finished, got {} pages", page_counter);
                             true
                         },
                     }
                 },
                 None => {
-                    println!("No pagination, got 1 page");
+                    info!("No pagination, got 1 page");
                     true
                 },
             };
@@ -141,7 +152,7 @@ impl<Data, ItemBase: Display + Clone, ItemDetails: Debug + Clone> WebScraper<Dat
         if total_count == 70 {
             panic!("Exactly 70 items in list! Check if your search query is refined enough!");
         } else {
-            println!("Found {} items in {} pages", total_count, page_counter)
+            info!("Found {} items in {} pages", total_count, page_counter)
         }
 
         Ok(items)
@@ -155,7 +166,7 @@ impl<Data, ItemBase: Display + Clone, ItemDetails: Debug + Clone> WebScraper<Dat
         for v in values {
             let mut query_local = query.clone();
             query_local.insert(split_by.clone(), v.to_owned());
-            println!("Query page: {:?}", query_local);
+            debug!("Query page: {:?}", query_local);
             let mut items_list = self.get_items_list(&query_local, page_limit)?;
             items.append(&mut items_list);
         }
@@ -177,11 +188,11 @@ impl<Data, ItemBase: Display + Clone, ItemDetails: Debug + Clone> WebScraper<Dat
     }
 
     pub fn get_and_parse_item_details(&self, url: &Url, base: &ItemBase) -> Result<ItemWithDetails<ItemBase, ItemDetails>> {
-        println!("Downloading and parsing item details: {} - {}", url, base);
+        info!("Downloading and parsing item details: {} - {}", url, base);
         let doc = self.get_item_details(url)?;
 
         let details = (self.details_parser)(doc)?;
-        println!("\tItem details: {:?}", details);
+        debug!("\tItem details: {:?}", details);
 
         Ok(ItemWithDetails { base: base.clone(), details })
     }

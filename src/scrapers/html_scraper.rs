@@ -35,7 +35,7 @@ pub trait HtmlParser {
 
 pub fn get_first_text_by_selector(element: &ElementRef, selector: &Selector) -> Option<String> {
     let first_matching = element.select(selector).next()?;
-    //println!("First matching: {:?}", first_matching);
+    //debug!("First matching: {:?}", first_matching);
     let text = get_first_text_part(&first_matching)?;
     Some(text)
 }
